@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  BROKER
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  CLOSED
+  LOST
+}
+
+enum LeadTemperature {
+  HOT
+  WARM
+  COLD
+}
+
+enum PropertyStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(BROKER)
+  leads     Lead[]   @relation("BrokerLeads")
+  deals     Deal[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Lead {
+  id          String          @id @default(uuid())
+  name        String
+  email       String?
+  phone       String
+  source      String
+  status      LeadStatus      @default(NEW)
+  temperature LeadTemperature @default(COLD)
+  score       Int             @default(0)
+  brokerId    String?
+  broker      User?           @relation("BrokerLeads", fields: [brokerId], references: [id])
+  deals       Deal[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model Property {
+  id          String         @id @default(uuid())
+  title       String
+  description String?
+  price       Float
+  city        String
+  address     String
+  status      PropertyStatus @default(AVAILABLE)
+  deals       Deal[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model Deal {
+  id         String   @id @default(uuid())
+  leadId     String
+  lead       Lead     @relation(fields: [leadId], references: [id])
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+  brokerId   String
+  broker     User     @relation(fields: [brokerId], references: [id])
+  value      Float
+  status     String   @default("OPEN")
+  commission Float
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
